@@ -3,6 +3,7 @@ from torch.backends import cudnn
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import pickle
+from datetime import datetime
 
 import eval
 from data.div2k import *
@@ -29,6 +30,8 @@ parser.add_argument('--load_data', default=False, type=int,
                     help='Load previously generated dataset')
 parser.add_argument('--save_data', default=True, type=int,
                     help='Save generated dataset')
+parser.add_argument('--date_str', default=None, type=int,
+                    help='Previous data date str')
 parser.add_argument('--num_batches', default=BATCH_SIZE, type=int,
                     help='Number of batches for training')
 parser.add_argument('--R', default=R, type=int,
@@ -78,7 +81,7 @@ def train():
     print(f'device: {device}')
 
     if args.load_data and os.path.exists(DATA_FOLDER) and os.listdir(DATA_FOLDER):
-        data, data_info = load_data()
+        data, data_info = load_data(args.date_str)
     else:
         # Folder does not exist or is empty
         print("No data found, generating data...")
@@ -89,22 +92,25 @@ def train():
         ])
 
         # Load the dataset
-        div2k_dataset = DIV2KLoader(div2k_path=args.dataset_root, transform=transform)
-
-        data, data_info = generate_dataset(div2k_dataset=div2k_dataset,
-                                           num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
-
-        div2k_eval_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
-
-        eval_data, eval_data_info = generate_dataset(div2k_dataset=div2k_eval_dataset,
-                                                     num_batches=NUM_EVAL_BATCHES, num_images=BATCH_SIZE)
-        # Test
-        # div2k_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
+        # div2k_dataset = DIV2KLoader(div2k_path=args.dataset_root, transform=transform)
         #
-        # data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
+        # data, data_info = generate_dataset(div2k_dataset=div2k_dataset,
+        #                                    num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
+        #
+        # div2k_eval_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
+        #
+        # eval_data, eval_data_info = generate_dataset(div2k_dataset=div2k_eval_dataset,
+        #                                              num_batches=NUM_EVAL_BATCHES, num_images=BATCH_SIZE)
+        # Test
+        div2k_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
+
+        data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
+
+        eval_data = []
+        eval_data_info = []
 
         if args.save_data:
-            save_data(data, data_info)
+            save_data(data, data_info, eval_data, eval_data_info)
 
     if args.tensorboard:
         from datetime import datetime
@@ -223,31 +229,36 @@ def train():
     writer.close()
 
 
-def save_data(data, data_info):
+def save_data(data, data_info, eval_data, eval_data_info):
     # Ensure the folder exists
     if not os.path.exists(DATA_FOLDER):
         os.makedirs(DATA_FOLDER)
+
+    # Get the current date and time and format it as a string
+    now = datetime.now()
+    date_str = now.strftime("%m%d_%H")
+
     # Save the data
-    with open(os.path.join(DATA_FOLDER, 'data.pkl'), 'wb') as f:
+    with open(os.path.join(DATA_FOLDER, f'data_{date_str}.pkl'), 'wb') as f:
         pickle.dump(data, f)
-    with open(os.path.join(DATA_FOLDER, 'data_info.pkl'), 'wb') as f:
+    with open(os.path.join(DATA_FOLDER, f'data_info_{date_str}.pkl'), 'wb') as f:
         pickle.dump(data_info, f)
-    with open(os.path.join(DATA_FOLDER, 'eval_data.pkl'), 'wb') as f:
+    with open(os.path.join(DATA_FOLDER, f'eval_data_{date_str}.pkl'), 'wb') as f:
         pickle.dump(eval_data, f)
-    with open(os.path.join(DATA_FOLDER, 'eval_data_info.pkl'), 'wb') as f:
+    with open(os.path.join(DATA_FOLDER, f'eval_data_info_{date_str}.pkl'), 'wb') as f:
         pickle.dump(eval_data_info, f)
     print("Data saved successfully!")
 
 
-def load_data():
+def load_data(date_str):
     # Folder exists and is not empty, load the data
-    with open(os.path.join(DATA_FOLDER, 'data.pkl'), 'rb') as f:
+    with open(os.path.join(DATA_FOLDER, f'data.pkl_{date_str}'), 'rb') as f:
         data = pickle.load(f)
-    with open(os.path.join(DATA_FOLDER, 'data_info.pkl'), 'rb') as f:
+    with open(os.path.join(DATA_FOLDER, f'data_info_{date_str}.pkl'), 'rb') as f:
         data_info = pickle.load(f)
-    with open(os.path.join(DATA_FOLDER, 'eval_data.pkl'), 'rb') as f:
+    with open(os.path.join(DATA_FOLDER, f'eval_data_{date_str}.pkl'), 'rb') as f:
         eval_data = pickle.load(f)
-    with open(os.path.join(DATA_FOLDER, 'eval_data_info.pkl'), 'rb') as f:
+    with open(os.path.join(DATA_FOLDER, f'eval_data_info_{date_str}.pkl'), 'rb') as f:
         eval_data_info = pickle.load(f)
     print("Data loaded successfully!")
     return data, data_info
