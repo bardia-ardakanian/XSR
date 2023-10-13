@@ -232,10 +232,10 @@ def save_data(data, data_info):
         pickle.dump(data, f)
     with open(os.path.join(DATA_FOLDER, 'data_info.pkl'), 'wb') as f:
         pickle.dump(data_info, f)
-    # with open(os.path.join(DATA_FOLDER, 'eval_data.pkl'), 'wb') as f:
-    # pickle.dump(eval_data, f)
-    # with open(os.path.join(DATA_FOLDER, 'eval_data_info.pkl'), 'wb') as f:
-    #     pickle.dump(eval_data_info, f)
+    with open(os.path.join(DATA_FOLDER, 'eval_data.pkl'), 'wb') as f:
+        pickle.dump(eval_data, f)
+    with open(os.path.join(DATA_FOLDER, 'eval_data_info.pkl'), 'wb') as f:
+        pickle.dump(eval_data_info, f)
     print("Data saved successfully!")
 
 
