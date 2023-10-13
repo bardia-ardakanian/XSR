@@ -48,6 +48,44 @@ def plot_image(data, sub_image_size=SUB_IMAGE_SIZE):
     plt.show()
 
 
+def plot_batch(images_with_labels, num_images=BATCH_SIZE):
+    """
+    Plots concatenated images along with their labels.
+
+    Parameters:
+        images_with_labels (list of tuples): Each tuple contains a concatenated image and its label.
+        num_images (int): Number of images to plot.
+    """
+    fig, axes = plt.subplots(num_images, 2, figsize=(10, 5 * num_images))
+
+    for i, (lidx, ridx, image, label) in enumerate(images_with_labels[:num_images]):
+        # If the image is a PyTorch tensor, convert it to a NumPy array
+        if torch.is_tensor(image):
+            image = image.permute(1, 2, 0).cpu().numpy()  # CxHxW to HxWxC
+
+        # Split the channels
+        original_image = image[..., :3]
+        transformed_image = image[..., 3:]
+
+        # Check if the images are grayscale and remove the channel dimension if they are
+        if original_image.shape[-1] == 1:
+            original_image = original_image.squeeze(-1)
+        if transformed_image.shape[-1] == 1:
+            transformed_image = transformed_image.squeeze(-1)
+
+        # Plot the original and transformed images side by side
+        axes[i, 0].imshow(original_image)
+        axes[i, 0].set_title(f'Original - Label: {label}')
+        axes[i, 0].axis('off')
+
+        axes[i, 1].imshow(transformed_image)
+        axes[i, 1].set_title(f'Transformed - Label: {label}')
+        axes[i, 1].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+
+
 def plot_images_with_labels(lidx, ridx, images, labels, num_images):
     """
     Plots images along with their IDs and labels.

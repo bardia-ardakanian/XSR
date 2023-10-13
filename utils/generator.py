@@ -6,7 +6,7 @@ from tqdm import tqdm
 from utils.augmentations import *
 
 
-def generate_sub_images(dataset, num_images, image_size):
+def generate_batches(dataset, num_images, image_size, transform):
     batch = []
 
     for _ in range(num_images):
@@ -26,33 +26,16 @@ def generate_sub_images(dataset, num_images, image_size):
         # Extract the sub-image
         sub_image = pil_image.crop((start_x, start_y, start_x + image_size[0], start_y + image_size[1]))
 
+        # Apply transformations to the sub_image
+        transformed_sub_image = transform(sub_image)
+
         # Convert sub-image back to tensor
         sub_image = transforms.ToTensor()(sub_image)
 
         # Add the ground truth, sub-image, and sub-image location to the batch
-        batch.append((idx, image, sub_image, (start_x, start_y)))
+        batch.append((idx, image, sub_image, transformed_sub_image, (start_x, start_y)))
 
     return batch
-
-
-def generate_transformed_sub_images(batch, transform):
-    # Apply the transformations to each image in the batch
-    transformed_batch = []
-
-    # Define a transform to convert a tensor to a PIL Image
-    to_pil_image = transforms.ToPILImage()
-
-    for idx, ground_truth, sub_image, location in batch:
-        # Convert the tensor to a PIL Image
-        pil_sub_image = to_pil_image(sub_image)
-
-        # Apply transformations to the sub_image
-        transformed_sub_image = transform(pil_sub_image)
-
-        # Add the transformed sub_image and other details to the new batch
-        transformed_batch.append((idx, ground_truth, sub_image, transformed_sub_image, location))
-
-    return transformed_batch
 
 
 def generate_dataset(div2k_dataset, num_batches, num_images, image_size):
@@ -84,13 +67,12 @@ def generate_dataset(div2k_dataset, num_batches, num_images, image_size):
 
     for _ in tqdm(range(num_batches), desc='Generating batches'):
         # Generate sub-images
-        sub_images = generate_sub_images(dataset=div2k_dataset, num_images=num_images, image_size=image_size)
-
         # Generate transformed sub-images
-        transformed_sub_images = generate_transformed_sub_images(sub_images, target_transform)
+        transformed_sub_images = generate_batches(dataset=div2k_dataset, num_images=num_images,
+                                                  image_size=image_size, transform=target_transform)
 
         # Store the additional information
-        dataset_info.extend(transformed_sub_images)
+        # dataset_info.extend(transformed_sub_images)
 
         # Extracting batch
         batch = [item[2] for item in transformed_sub_images]
