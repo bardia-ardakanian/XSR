@@ -139,8 +139,7 @@ def train():
 
     # Initialize the data loader
     data_loader = DataLoader(div2k_dataset, batch_size=1, shuffle=False)
-    eval_data_loader = DataLoader(div2k_eval_dataset, batch_size=1, shuffle=False)
-    eval_data_loader = data_loader
+    eval_data_loader = DataLoader(div2k_eval, batch_size=1, shuffle=False)
 
     # Testing dataset performance
     # ----------------------------------------------------------------------------------------------------
