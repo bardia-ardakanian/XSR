@@ -80,21 +80,15 @@ def train():
         ])
 
         # Load the dataset
-        # div2k_dataset = DIV2KLoader(div2k_path=args.dataset_root, transform=transform)
-        #
-        # data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES,
-        #                                             num_images=BATCH_SIZE, image_size=SUB_IMAGE_SIZE)
-        #
-        # div2k_eval_dataset = DIV2KLoader(div2k_path=args.dataset_val_root, transform=transform)
-        #
-        # eval_data, eval_data_info = generate_dataset(div2k_dataset=div2k_eval_dataset, num_batches=NUM_EVAL_BATCHES,
-        #                                              num_images=BATCH_SIZE, image_size=SUB_IMAGE_SIZE)
-
-        # Testing
-        div2k_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
+        div2k_dataset = DIV2KLoader(div2k_path=args.dataset_root, transform=transform)
 
         data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES,
-                                           num_images=BATCH_SIZE, image_size=SUB_IMAGE_SIZE)
+                                                    num_images=BATCH_SIZE, image_size=SUB_IMAGE_SIZE)
+
+        div2k_eval_dataset = DIV2KLoader(div2k_path=args.dataset_val_root, transform=transform)
+
+        eval_data, eval_data_info = generate_dataset(div2k_dataset=div2k_eval_dataset, num_batches=NUM_EVAL_BATCHES,
+                                                     num_images=BATCH_SIZE, image_size=SUB_IMAGE_SIZE)
     except:
         raise Exception('Dataset root is invalid')
 

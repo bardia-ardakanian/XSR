@@ -1,8 +1,8 @@
 # Dataset Conf
 DIV2K_ROOT = 'data/div2k-dataset/DIV2K_train_HR'
 DIV2K_VAL = 'data/div2k-dataset/DIV2K_valid_HR'
-NUM_BATCHES = 20
-BATCH_SIZE = 10
+NUM_BATCHES = 250000
+BATCH_SIZE = 16
 NUM_EVAL_BATCHES = 10000
 # Image Conf
 R = 224
@@ -18,6 +18,6 @@ STRIDE = (1, 1)
 PADDING = (1, 1)
 # Evaluation parameters
 EPOCH_SAVE = 50
-ITER_SAVE = 1000
-ITER_UPDATE = 3
+ITER_SAVE = 12500
+ITER_UPDATE = 1000
 ITER_EVAL = 1000
