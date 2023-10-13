@@ -1,9 +1,9 @@
 # Dataset Conf
 DIV2K_ROOT = 'data/div2k-dataset/DIV2K_train_HR'
 DIV2K_VAL = 'data/div2k-dataset/DIV2K_valid_HR'
-NUM_BATCHES = 2
+NUM_BATCHES = 25000
 BATCH_SIZE = 16
-NUM_EVAL_BATCHES = 5
+NUM_EVAL_BATCHES = 2500
 # Image Conf
 R = 224
 IMAGE_SIZE = (R, R)

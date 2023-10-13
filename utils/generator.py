@@ -6,13 +6,17 @@ from tqdm import tqdm
 from utils.augmentations import *
 
 
-def generate_batches(dataset, num_images, image_size, transform):
+def generate_batches(dataset, transform, num_images=BATCH_SIZE, image_size=SUB_IMAGE_SIZE):
     batch = []
 
+    used_idxes = set()
     for _ in range(num_images):
         # Select a random image
         idx = random.randint(0, len(dataset) - 1)
+        while idx in used_idxes:  # Ensure idx has not been used
+            idx = random.randint(0, len(dataset) - 1)
         image = dataset[idx]
+        used_idxes.add(idx)
 
         # Convert tensor image back to PIL for cropping
         pil_image = transforms.ToPILImage()(image)
@@ -38,7 +42,7 @@ def generate_batches(dataset, num_images, image_size, transform):
     return batch
 
 
-def generate_dataset(div2k_dataset, num_batches, num_images, image_size):
+def generate_dataset(div2k_dataset, num_batches, num_images, extra_info=False):
     """
     Generate a dataset containing original and transformed batches.
 
@@ -68,11 +72,11 @@ def generate_dataset(div2k_dataset, num_batches, num_images, image_size):
     for _ in tqdm(range(num_batches), desc='Generating batches'):
         # Generate sub-images
         # Generate transformed sub-images
-        transformed_sub_images = generate_batches(dataset=div2k_dataset, num_images=num_images,
-                                                  image_size=image_size, transform=target_transform)
+        transformed_sub_images = generate_batches(dataset=div2k_dataset, num_images=num_images, transform=target_transform)
 
         # Store the additional information
-        # dataset_info.extend(transformed_sub_images)
+        if extra_info:
+            dataset_info.extend(transformed_sub_images)
 
         # Extracting batch
         batch = [item[2] for item in transformed_sub_images]
@@ -90,8 +94,7 @@ def generate_dataset(div2k_dataset, num_batches, num_images, image_size):
                 i = random.randint(0, len(batch) - 1)
 
             img_i = batch[i]
-            concatenated_img_pos = torch.cat((img_i, transformed_batch[i]),
-                                             dim=0)  # Assuming images are in [C, H, W] format
+            concatenated_img_pos = torch.cat((img_i, transformed_batch[i]), dim=0)  # Assuming images are in [C, H, W] format
             labels.append((i, i, concatenated_img_pos, 1))  # batchid, transformedid, concatimg, label
             used_pairs.add((i, i))
 

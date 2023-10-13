@@ -82,15 +82,19 @@ def train():
         # Load the dataset
         div2k_dataset = DIV2KLoader(div2k_path=args.dataset_root, transform=transform)
 
-        data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES,
-                                                    num_images=BATCH_SIZE, image_size=SUB_IMAGE_SIZE)
+        data, data_info = generate_dataset(div2k_dataset=div2k_dataset,
+                                           num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
 
         div2k_eval_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
 
-        eval_data, eval_data_info = generate_dataset(div2k_dataset=div2k_eval_dataset, num_batches=NUM_EVAL_BATCHES,
-                                                     num_images=BATCH_SIZE, image_size=SUB_IMAGE_SIZE)
+        eval_data, eval_data_info = generate_dataset(div2k_dataset=div2k_eval_dataset,
+                                                     num_batches=NUM_EVAL_BATCHES, num_images=BATCH_SIZE)
+        # Test
+        # div2k_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
+        #
+        # data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
     except:
-        raise Exception('Dataset root is invalid')
+        raise Exception()
 
     if args.tensorboard:
         from datetime import datetime
@@ -121,7 +125,7 @@ def train():
 
     # Initialize the div2k dataset and eval
     div2k_dataset = DIV2KDataset(data, data_info)
-    # div2k_eval = DIV2KDataset(eval_data, eval_data_info)
+    div2k_eval = DIV2KDataset(eval_data, eval_data_info)
 
     # Initialize the data loader
     data_loader = DataLoader(div2k_dataset, batch_size=1, shuffle=False)
@@ -162,7 +166,6 @@ def train():
         # Enumerate through the DataLoader
         for j, (lidx, ridx, images, labels) in enumerate(data_loader, start=start_iter):
 
-
             # Ensure inputs and labels are torch tensors and send them to the device
             images = images.squeeze(0).to(device)
             labels = labels.squeeze().to(device).float()  # Ensure labels are float type
@@ -190,7 +193,7 @@ def train():
 
             # Save weights
             if (j + 1) % ITER_SAVE == 0:
-                save_checkpoint(epoch, j+1, net, optimizer, f'weights/weights_iter_{j}.pth')
+                save_checkpoint(epoch, j + 1, net, optimizer, f'weights/weights_iter_{j}.pth')
                 # torch.save(net.state_dict(), f'weights/weights_iter_{j}.pth')
 
         # Log and print total loss after each epoch
@@ -199,12 +202,12 @@ def train():
         # Save weights
         if (epoch + 1) % EPOCH_SAVE == 0:
             eval(net, eval_data_loader, criterion, writer, epoch * len(data_loader) + j, device)
-            save_checkpoint(epoch, j+1, net, optimizer, f'weights/weights_epoch_{epoch}.pth')
+            save_checkpoint(epoch, j + 1, net, optimizer, f'weights/weights_epoch_{epoch}.pth')
             # torch.save(net.state_dict(), f'weights/weights_epoch_{epoch}.pth')
 
     # Finish training and save weights
     eval(net, eval_data_loader, criterion, writer, epoch * len(data_loader) + j, device)
-    save_checkpoint(epoch, j+1, net, optimizer, f'weights/weights_epoch_{epoch}.pth')
+    save_checkpoint(epoch, j + 1, net, optimizer, f'weights/weights_epoch_{epoch}.pth')
     # torch.save(net.state_dict(), f'weights/weights_epoch_{epoch}.pth')
 
     # Close the TensorBoard writer
