@@ -42,7 +42,7 @@ def generate_batches(dataset, transform, num_images=BATCH_SIZE, image_size=SUB_I
     return batch
 
 
-def generate_dataset(div2k_dataset, num_batches, num_images, extra_info=False):
+def generate_dataset(div2k_dataset, num_batches, num_images, extra_info=True):
     """
     Generate a dataset containing original and transformed batches.
 
@@ -50,7 +50,7 @@ def generate_dataset(div2k_dataset, num_batches, num_images, extra_info=False):
         div2k_dataset: The original dataset.
         num_batches (int): Number of batches to generate.
         num_images (int): Number of images per batch.
-        image_size (int): Size of the sub-images.
+        data_info (bool): Save data info
 
     Returns:
         list: A dataset containing tuples of (batch, transformed_batch).

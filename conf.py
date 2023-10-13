@@ -1,4 +1,5 @@
 # Dataset Conf
+DATA_FOLDER = "data/generated_batches"
 DIV2K_ROOT = 'data/div2k-dataset/DIV2K_train_HR'
 DIV2K_VAL = 'data/div2k-dataset/DIV2K_valid_HR'
 NUM_BATCHES = 25000

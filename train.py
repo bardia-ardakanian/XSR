@@ -2,6 +2,7 @@ import argparse
 from torch.backends import cudnn
 from torch.utils.data import DataLoader
 import torch.nn as nn
+import pickle
 
 import eval
 from data.div2k import *
@@ -24,6 +25,10 @@ parser.add_argument('--dataset_eval_root', default=DIV2K_VAL,
                     help='Dataset validation root directory path')
 parser.add_argument('--batch_size', default=BATCH_SIZE, type=int,
                     help='Batch size for training')
+parser.add_argument('--load_data', default=False, type=int,
+                    help='Load previously generated dataset')
+parser.add_argument('--save_data', default=True, type=int,
+                    help='Save generated dataset')
 parser.add_argument('--num_batches', default=BATCH_SIZE, type=int,
                     help='Number of batches for training')
 parser.add_argument('--R', default=R, type=int,
@@ -36,7 +41,7 @@ parser.add_argument('--start_iter', default=0, type=int,
                     help='Resume training at this iter')
 parser.add_argument('--num_workers', default=4, type=int,
                     help='Number of workers used in data loading')
-parser.add_argument('--cuda', default=False, type=str2bool,
+parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use CUDA to train model')
 parser.add_argument('--lr', '--learning-rate', default=LR, type=float,
                     help='initial learning rate')
@@ -72,7 +77,11 @@ def train():
     print(torch.cuda.is_available())
     print(f'device: {device}')
 
-    try:
+    if args.load_data and os.path.exists(DATA_FOLDER) and os.listdir(DATA_FOLDER):
+        data, data_info = load_data()
+    else:
+        # Folder does not exist or is empty
+        print("No data found, generating data...")
         # Define transformations
         transform = transforms.Compose([
             #     transforms.Resize(image_size),
@@ -93,8 +102,9 @@ def train():
         # div2k_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
         #
         # data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
-    except:
-        raise Exception()
+
+        if args.save_data:
+            save_data(data, data_info)
 
     if args.tensorboard:
         from datetime import datetime
@@ -212,6 +222,36 @@ def train():
 
     # Close the TensorBoard writer
     writer.close()
+
+
+def save_data(data, data_info):
+    # Ensure the folder exists
+    if not os.path.exists(DATA_FOLDER):
+        os.makedirs(DATA_FOLDER)
+    # Save the data
+    with open(os.path.join(DATA_FOLDER, 'data.pkl'), 'wb') as f:
+        pickle.dump(data, f)
+    with open(os.path.join(DATA_FOLDER, 'data_info.pkl'), 'wb') as f:
+        pickle.dump(data_info, f)
+    # with open(os.path.join(DATA_FOLDER, 'eval_data.pkl'), 'wb') as f:
+    # pickle.dump(eval_data, f)
+    # with open(os.path.join(DATA_FOLDER, 'eval_data_info.pkl'), 'wb') as f:
+    #     pickle.dump(eval_data_info, f)
+    print("Data saved successfully!")
+
+
+def load_data():
+    # Folder exists and is not empty, load the data
+    with open(os.path.join(DATA_FOLDER, 'data.pkl'), 'rb') as f:
+        data = pickle.load(f)
+    with open(os.path.join(DATA_FOLDER, 'data_info.pkl'), 'rb') as f:
+        data_info = pickle.load(f)
+    with open(os.path.join(DATA_FOLDER, 'eval_data.pkl'), 'rb') as f:
+        eval_data = pickle.load(f)
+    with open(os.path.join(DATA_FOLDER, 'eval_data_info.pkl'), 'rb') as f:
+        eval_data_info = pickle.load(f)
+    print("Data loaded successfully!")
+    return data, data_info
 
 
 def save_checkpoint(epoch, iteration, model, optimizer, filename):

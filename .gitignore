@@ -160,6 +160,7 @@ cython_debug/
 #.idea/
 
 data/div2k-dataset
+data/generated_batches
 .DS_STORE
 runs/
 weights/
