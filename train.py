@@ -80,37 +80,17 @@ def train():
     print(torch.cuda.is_available())
     print(f'device: {device}')
 
-    if args.load_data and os.path.exists(DATA_FOLDER) and os.listdir(DATA_FOLDER):
-        data, data_info = load_data(args.date_str)
-    else:
-        # Folder does not exist or is empty
-        print("No data found, generating data...")
-        # Define transformations
-        transform = transforms.Compose([
-            #     transforms.Resize(image_size),
-            transforms.ToTensor()
-        ])
+    # build_load_dataset_deprecated()
 
-        # Load the dataset
-        # div2k_dataset = DIV2KLoader(div2k_path=args.dataset_root, transform=transform)
-        #
-        # data, data_info = generate_dataset(div2k_dataset=div2k_dataset,
-        #                                    num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
-        #
-        # div2k_eval_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
-        #
-        # eval_data, eval_data_info = generate_dataset(div2k_dataset=div2k_eval_dataset,
-        #                                              num_batches=NUM_EVAL_BATCHES, num_images=BATCH_SIZE)
-        # Test
-        div2k_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
+    # Define transformations
+    transform = transforms.Compose([
+        #     transforms.Resize(image_size),
+        transforms.ToTensor()
+    ])
 
-        data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
-
-        eval_data = []
-        eval_data_info = []
-
-        if args.save_data:
-            save_data(data, data_info, eval_data, eval_data_info)
+    # div2k_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
+    div2k_dataset = DIV2KLoader(div2k_path=args.dataset_root, transform=transform)
+    div2k_eval = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
 
     if args.tensorboard:
         from datetime import datetime
@@ -139,14 +119,6 @@ def train():
 
     net.train()
 
-    # Initialize the div2k dataset and eval
-    div2k_dataset = DIV2KDataset(data, data_info)
-    div2k_eval = DIV2KDataset(eval_data, eval_data_info)
-
-    # Initialize the data loader
-    data_loader = DataLoader(div2k_dataset, batch_size=1, shuffle=False)
-    eval_data_loader = DataLoader(div2k_eval, batch_size=1, shuffle=False)
-
     # Testing dataset performance
     # ----------------------------------------------------------------------------------------------------
     # Retrieve additional information
@@ -168,6 +140,11 @@ def train():
     # Arrays to store losses
     total_losses = []
     local_losses = []
+
+    # Load the dataset
+
+    data_loader = make_dataset(div2k_dataset=div2k_dataset)
+    eval_data_loader = make_dataset(div2k_dataset=div2k_eval)
 
     # Training loop
     for epoch in range(start_epoch, NUM_EPOCHS):
@@ -220,6 +197,10 @@ def train():
             save_checkpoint(epoch, j + 1, net, optimizer, f'weights/weights_epoch_{epoch}.pth')
             # torch.save(net.state_dict(), f'weights/weights_epoch_{epoch}.pth')
 
+        # Refresh dataset
+        if (epoch + 1) % DATA_RENEWAL == 0:
+            data_loader = make_dataset(div2k_dataset)
+
     # Finish training and save weights
     eval(net, eval_data_loader, criterion, writer, epoch * len(data_loader) + j, device)
     save_checkpoint(epoch, j + 1, net, optimizer, f'weights/weights_epoch_{epoch}.pth')
@@ -227,6 +208,54 @@ def train():
 
     # Close the TensorBoard writer
     writer.close()
+
+
+def build_load_dataset_deprecated():
+    if args.load_data and os.path.exists(DATA_FOLDER) and os.listdir(DATA_FOLDER):
+        data, data_info = load_data(args.date_str)
+    else:
+        # Folder does not exist or is empty
+        print("No data found, generating data...")
+        # Define transformations
+        transform = transforms.Compose([
+            #     transforms.Resize(image_size),
+            transforms.ToTensor()
+        ])
+
+        # Load the dataset
+        div2k_dataset = DIV2KLoader(div2k_path=args.dataset_root, transform=transform)
+
+        data, data_info = generate_dataset(div2k_dataset=div2k_dataset,
+                                           num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
+
+        div2k_eval_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
+
+        eval_data, eval_data_info = generate_dataset(div2k_dataset=div2k_eval_dataset,
+                                                     num_batches=NUM_EVAL_BATCHES, num_images=BATCH_SIZE)
+
+        # Initialize the div2k dataset and eval
+        div2k_dataset = DIV2KDataset(data, data_info)
+        div2k_eval = DIV2KDataset(eval_data, eval_data_info)
+
+        # Initialize the data loader
+        data_loader = DataLoader(div2k_dataset, batch_size=1, shuffle=False)
+        eval_data_loader = DataLoader(div2k_eval, batch_size=1, shuffle=False)
+
+        eval_data = []
+        eval_data_info = []
+
+        if args.save_data:
+            save_data(data, data_info, eval_data, eval_data_info)
+
+
+def make_dataset(div2k_dataset):
+    # Generate dataset
+    data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
+    # Initialize the div2k dataset and eval
+    div2k_dataset = DIV2KDataset(data, data_info)
+    # Initialize the data loader
+    data_loader = DataLoader(div2k_dataset, batch_size=1, shuffle=False)
+    return data_loader
 
 
 def save_data(data, data_info, eval_data, eval_data_info):
