@@ -36,7 +36,7 @@ parser.add_argument('--start_iter', default=0, type=int,
                     help='Resume training at this iter')
 parser.add_argument('--num_workers', default=4, type=int,
                     help='Number of workers used in data loading')
-parser.add_argument('--cuda', default=False, type=str2bool,
+parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use CUDA to train model')
 parser.add_argument('--lr', '--learning-rate', default=LR, type=float,
                     help='initial learning rate')
@@ -84,7 +84,7 @@ def train():
         data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES,
                                                     num_images=BATCH_SIZE, image_size=SUB_IMAGE_SIZE)
 
-        div2k_eval_dataset = DIV2KLoader(div2k_path=args.dataset_val_root, transform=transform)
+        div2k_eval_dataset = DIV2KLoader(div2k_path=args.dataset_eval_root, transform=transform)
 
         eval_data, eval_data_info = generate_dataset(div2k_dataset=div2k_eval_dataset, num_batches=NUM_EVAL_BATCHES,
                                                      num_images=BATCH_SIZE, image_size=SUB_IMAGE_SIZE)
@@ -120,11 +120,11 @@ def train():
 
     # Initialize the div2k dataset and eval
     div2k_dataset = DIV2KDataset(data, data_info)
-    # div2k_eval = DIV2KDataset(eval_data, eval_data_info)
+    div2k_eval = DIV2KDataset(eval_data, eval_data_info)
 
     # Initialize the data loader
     data_loader = DataLoader(div2k_dataset, batch_size=1, shuffle=True)
-    # eval_data_loader = DataLoader(div2k_eval_dataset, batch_size=1, shuffle=True)
+    eval_data_loader = DataLoader(div2k_eval_dataset, batch_size=1, shuffle=True)
     eval_data_loader = data_loader
 
     # Testing dataset performance
