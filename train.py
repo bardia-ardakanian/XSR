@@ -159,7 +159,7 @@ def train():
 
         # Enumerate through the DataLoader
         for j, (lidx, ridx, images, labels) in enumerate(data_loader, start=start_iter):
-
+            print(images.shape)
             # Ensure inputs and labels are torch tensors and send them to the device
             images = images.squeeze(0).to(device)
             labels = labels.squeeze().to(device).float()  # Ensure labels are float type
