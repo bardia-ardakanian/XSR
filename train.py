@@ -67,7 +67,6 @@ if not os.path.exists(args.save_folder):
 
 
 def train():
-
     # Check if CUDA is available, otherwise use CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'device: {device}')
@@ -111,9 +110,11 @@ def train():
         cudnn.benchmark = True
         net = net.cuda()
 
+    start_epoch = 0
+    start_iteration = 0
     if args.resume:
         print('Resuming training, loading {}...'.format(args.resume))
-        net.load_weights(args.resume)
+        net, optimizer, start_epoch, start_iteration = load_checkpoint(net, optimizer, 'weights/your_saved_weights.pth')
 
     net.train()
 
@@ -148,12 +149,16 @@ def train():
     local_losses = []
 
     # Training loop
-    for epoch in range(NUM_EPOCHS):
+    for epoch in range(start_epoch, NUM_EPOCHS):
+        # If we are at the first epoch after loading the checkpoint, we want to start from `start_iteration`
+        # Otherwise, we start from the beginning of the loop
+        start_iter = start_iteration if epoch == start_epoch else 0
+
         net.train()
         epoch_loss = 0.0
 
         # Enumerate through the DataLoader
-        for j, (lidx, ridx, images, labels) in enumerate(data_loader):
+        for j, (lidx, ridx, images, labels) in enumerate(data_loader, start=start_iter):
 
             # Ensure inputs and labels are torch tensors and send them to the device
             images = images.squeeze(0).to(device)
@@ -182,7 +187,8 @@ def train():
 
             # Save weights
             if (j + 1) % ITER_SAVE == 0:
-                torch.save(net.state_dict(), f'weights/weights_iter_{j}.pth')
+                save_checkpoint(epoch, j+1, net, optimizer, f'weights/weights_iter_{j}.pth')
+                # torch.save(net.state_dict(), f'weights/weights_iter_{j}.pth')
 
         # Log and print total loss after each epoch
         update_total_loss(data_loader, epoch, epoch_loss, total_losses, writer)
@@ -190,14 +196,37 @@ def train():
         # Save weights
         if (epoch + 1) % EPOCH_SAVE == 0:
             eval(net, eval_data_loader, criterion, writer, epoch * len(data_loader) + j, device)
-            torch.save(net.state_dict(), f'weights/weights_epoch_{epoch}.pth')
+            save_checkpoint(epoch, j+1, net, optimizer, f'weights/weights_epoch_{epoch}.pth')
+            # torch.save(net.state_dict(), f'weights/weights_epoch_{epoch}.pth')
 
     # Finish training and save weights
     eval(net, eval_data_loader, criterion, writer, epoch * len(data_loader) + j, device)
-    torch.save(net.state_dict(), f'weights/weights_epoch_{epoch}.pth')
+    save_checkpoint(epoch, j+1, net, optimizer, f'weights/weights_epoch_{epoch}.pth')
+    # torch.save(net.state_dict(), f'weights/weights_epoch_{epoch}.pth')
 
     # Close the TensorBoard writer
     writer.close()
+
+
+def save_checkpoint(epoch, iteration, model, optimizer, filename):
+    checkpoint = {
+        'epoch': epoch,
+        'iteration': iteration,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+    }
+    torch.save(checkpoint, filename)
+
+
+def load_checkpoint(model, optimizer, filename):
+    # Note: Input model & optimizer should be pre-defined. This routine only updates their states.
+    checkpoint = torch.load(filename)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    epoch = checkpoint['epoch']
+    iteration = checkpoint['iteration']
+
+    return model, optimizer, epoch, iteration
 
 
 def update_total_loss(data_loader, epoch, epoch_loss, total_losses, writer):
@@ -207,7 +236,8 @@ def update_total_loss(data_loader, epoch, epoch_loss, total_losses, writer):
 
 
 def update_local_loss(data_loader, epoch, j, local_losses, writer):
-    print(f'Epoch [{epoch + 1}/{NUM_EPOCHS}], Step [{j + 1}/{len(data_loader)}], Local Loss: {sum(local_losses) / len(local_losses):.4f}')
+    print(
+        f'Epoch [{epoch + 1}/{NUM_EPOCHS}], Step [{j + 1}/{len(data_loader)}], Local Loss: {sum(local_losses) / len(local_losses):.4f}')
     writer.add_scalar('training loss (local)', sum(local_losses) / len(local_losses), epoch * len(data_loader) + j)
 
 
