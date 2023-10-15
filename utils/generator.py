@@ -42,7 +42,7 @@ def generate_batches(dataset, transform, num_images=BATCH_SIZE, image_size=SUB_I
     return batch
 
 
-def generate_dataset(div2k_dataset, num_batches, num_images, extra_info=True):
+def generate_dataset(div2k_dataset, num_batches, num_images, extra_info=False):
     """
     Generate a dataset containing original and transformed batches.
 

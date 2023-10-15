@@ -115,7 +115,7 @@ def train():
     start_iteration = 0
     if args.resume:
         print('Resuming training, loading {}...'.format(args.resume))
-        net, optimizer, start_epoch, start_iteration = load_checkpoint(net, optimizer, 'weights/your_saved_weights.pth')
+        net, optimizer, start_epoch, start_iteration = load_checkpoint(net, optimizer, f'weights\{args.resume}')
 
     net.train()
 
@@ -143,8 +143,10 @@ def train():
 
     # Load the dataset
 
-    data_loader = make_dataset(div2k_dataset=div2k_dataset)
-    eval_data_loader = make_dataset(div2k_dataset=div2k_eval)
+    print('DIV2K Train Dataloader')
+    data_loader = make_dataset(div2k_dataset, NUM_BATCHES)
+    print('DIV2K Eval Dataloader')
+    eval_data_loader = make_dataset(div2k_eval, NUM_EVAL_BATCHES)
 
     # Training loop
     for epoch in range(start_epoch, NUM_EPOCHS):
@@ -179,31 +181,42 @@ def train():
                 update_local_loss(data_loader, epoch, j, local_losses, writer)
                 local_losses = []  # Reset local losses
 
-            # Evaluation
-            if (j + 1) % ITER_EVAL == 0:
-                eval(net, eval_data_loader, criterion, writer, epoch * len(data_loader) + j, device)
+            # # Evaluation
+            # if (j + 1) % ITER_EVAL == 0:
+            #     eval(net, eval_data_loader, criterion, writer, epoch * len(data_loader) + j, device)
 
             # Save weights
-            if (j + 1) % ITER_SAVE == 0:
-                save_checkpoint(epoch, j + 1, net, optimizer, f'weights/weights_iter_{j}.pth')
-                # torch.save(net.state_dict(), f'weights/weights_iter_{j}.pth')
+            # if (j + 1) % ITER_SAVE == 0:
+            #     print(f'Saving weights after {j+1}th iter')
+            # save_checkpoint(epoch, j + 1, net, optimizer, f'{SAVE_ITER_FILE}_{j}.pth')
+            #     # torch.save(net.state_dict(), f'weights/weights_iter_{j}.pth')
 
         # Log and print total loss after each epoch
         update_total_loss(data_loader, epoch, epoch_loss, total_losses, writer)
 
+        # Evaluation
+        if (epoch + 1) % EPOCH_EVAL == 0:
+            eval(net, eval_data_loader, criterion, writer, epoch * len(data_loader) + j, device)
+
         # Save weights
         if (epoch + 1) % EPOCH_SAVE == 0:
-            eval(net, eval_data_loader, criterion, writer, epoch * len(data_loader) + j, device)
-            save_checkpoint(epoch, j + 1, net, optimizer, f'weights/weights_epoch_{epoch}.pth')
+            print(f'Saving weights after {epoch+1}th epoch')
+            save_checkpoint(epoch, j + 1, net, optimizer, f'{SAVE_EPOCH_FILE}_{epoch}.pth')
             # torch.save(net.state_dict(), f'weights/weights_epoch_{epoch}.pth')
 
         # Refresh dataset
         if (epoch + 1) % DATA_RENEWAL == 0:
-            data_loader = make_dataset(div2k_dataset)
+            print('Renewed DIV2K Train Dataloader')
+            data_loader = make_dataset(div2k_dataset, NUM_BATCHES)
+
+        if (epoch + 1) % EVAL_RENEWAL == 0:
+            print('Renewing Eval DataLoader')
+            eval_data_loader = make_dataset(div2k_eval, NUM_EVAL_BATCHES)
+
 
     # Finish training and save weights
     eval(net, eval_data_loader, criterion, writer, epoch * len(data_loader) + j, device)
-    save_checkpoint(epoch, j + 1, net, optimizer, f'weights/weights_epoch_{epoch}.pth')
+    save_checkpoint(epoch, j + 1, net, optimizer, f'{SAVE_FINISH_FILE}_{epoch}.pth')
     # torch.save(net.state_dict(), f'weights/weights_epoch_{epoch}.pth')
 
     # Close the TensorBoard writer
@@ -248,9 +261,9 @@ def build_load_dataset_deprecated():
             save_data(data, data_info, eval_data, eval_data_info)
 
 
-def make_dataset(div2k_dataset):
+def make_dataset(div2k_dataset, num_batches):
     # Generate dataset
-    data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=NUM_BATCHES, num_images=BATCH_SIZE)
+    data, data_info = generate_dataset(div2k_dataset=div2k_dataset, num_batches=num_batches, num_images=BATCH_SIZE)
     # Initialize the div2k dataset and eval
     div2k_dataset = DIV2KDataset(data, data_info)
     # Initialize the data loader
