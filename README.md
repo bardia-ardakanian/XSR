@@ -1,1 +1,1 @@
-# XSR
+# XTC (XAI Texture Classifier)
